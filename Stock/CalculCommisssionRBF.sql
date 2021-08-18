@@ -56,11 +56,14 @@ GO
 	set @CR = cursor for 
 
 	select reg_banque,Reg_DateEcheance,Reg_Label ,Reg_Montant,reg_status,reg_num,Reg_DateReglement ,regParam_Code,Reg_Devise_CoursMP,Devise_Code,
-		   xReg_Type,Reg_Euribor,xReg_Taux,xReg_TypeModif,xReg_NbrDraft,xReg_NbrSwiftM,xReg_NbrSwift,Reg_Devise_CoursPay
+		   xReg_Type,Reg_Euribor,xf.TMM,xReg_TypeModif,xReg_NbrDraft,xReg_NbrSwiftM,xReg_NbrSwift,Reg_Devise_CoursPay
 	from reglement
+	inner join xfrais xf
+		on month(reg_datereglement)=xf.mois-1
+		and year(reg_datereglement)=xf.année
 	inner join GaccExercice 
 		on year(reg_datereglement) =GaccExercice.GaccEx_Code 	
-		where RegParam_Code in ('rbf')and Reg_RegCpt=0 and  year(reg_dateecheance)>=2020 and reg_banque like '%stb%'  --and (reg_ref is not null or reg_ref1 is not null)  
+		where  RegParam_Code='rbf' and  /*Reg_RegCpt=0 and*/  year(reg_dateecheance)>=2020 and reg_banque like '%biat%'  --and (reg_ref is not null or reg_ref1 is not null)  
 		order by reg_datereglement                         
 	open @CR
 	FETCH NEXT FROM @CR
@@ -86,7 +89,7 @@ GO
 			insert into BanqueD ( Banque_Code,BanqueD_Date,BanqueD_Libelle,BanqueD_MontantE,BanqueD_MontantD,
 								  BanqueD_Statut,BanqueD_Type,BanqueD_Origine,BanqueD_Origine2,BanqueD_OrigineNum,Date_Create, Integ,Banque_Nature,Banque_Formule,
 								  BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
-	
+			
 			select				  @Banque_Code,@BanqueD_Date,@BanqueD_Libelle,0,ISnull((((datediff(day,@Date_Create,@BanqueD_Date))*@BanqueD_MontantD*(@xReg_Taux+2)/36000)),0),
 								  @BanqueD_Statut,4,5,'',@BanqueD_OrigineNum,@Date_Create,0,'','MT*TMM+2%*Nbre de jours/36000',
 								  '65160100','2','Paiements Interets'
