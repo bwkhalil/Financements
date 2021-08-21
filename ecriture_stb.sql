@@ -42,11 +42,11 @@ set @Lot = cursor for
 select DateReglement,Echeance,Regnum,Montant,TMM,Tiers_Code,reg_banque,reg_label from
 (		
 
-	select  top 100 Reg_DateReglement as DateReglement,Reg_DateEcheance as Echeance,reg_num as Regnum,Reg_Montant as Montant,xReg_Taux as TMM,Tiers_Code,reg_banque,reg_label
+	select  top 1 Reg_DateReglement as DateReglement,Reg_DateEcheance as Echeance,reg_num as Regnum,Reg_Montant as Montant,xReg_Taux as TMM,Tiers_Code,reg_banque,reg_label
 	from reglement
 	inner join GaccExercice 
 	on year(reg_datereglement) =GaccExercice.GaccEx_Code 	
-	where RegParam_Code in ('rbf') and Reg_RegCpt=0 and reg_num in( 'RF210185') and year(reg_dateecheance)>=2020 and reg_banque like '%stb%'  --and (reg_ref is not null or reg_ref1 is not null)
+	where RegParam_Code in ('rbf') and Reg_RegCpt=0 /*and reg_num in( 'RF20Tr777')*/ and year(reg_dateecheance)>=2020 and reg_banque like '%stb%'  --and (reg_ref is not null or reg_ref1 is not null)
 	and Reg_Num not in ('RFE210005','RFE210006')
 	--and reg_num='RF20Tr776'
 	order by Reg_DateReglement,Reg_Num  asc
@@ -68,22 +68,23 @@ select @ligDeb='MOBILISATION. Credit'+@regl
 
 WHILE @@FETCH_STATUS = 0
 	begin
-	select @ActRnum,'*---------------'
+	
 	select @bq_compte=Banque_Compte from banque where banque_code=@banquecode			--Compte de
 	select @bq_compte=isnull(@bq_compte, '0000')										--la banque
 	select @gaccjou_code=gaccjou_code from banque where banque_code=@banquecode
 	select @calcint =ISnull((((datediff(day,@start,@end)+1)*@Montant*(@TMM+2)/36000)),0);
-	
+	select @calcint,'*+*+***+',@ActRnum
 	select @nep='-'
 	select @ned='-';
 	
 WITH cte AS (
+            
 			select top 1 0 as typeop,idllig,valider,date_opr,libelle,credit,debit,
 			ROW_NUMBER() OVER (	PARTITION BY date_opr,libelle ORDER BY credit  ,debit ,date_opr,libelle) row_num
 			FROM xrelevehistorique
-			where cast(date_opr as date) between dateadd(day,-5,cast(@start   as date)) and dateadd(day,16,cast(@start   as date))
+			where cast(date_opr as date) between dateadd(day,0,cast(@start   as date)) and dateadd(day,8,cast(@start   as date))
 				  and banque like '%stb%'
-				  and valider=0			
+				  --and valider=0			
 				  and credit+debit=@Montant
 				  and rtrim(ltrim(libelle)) like '%'+@ligDeb+'%'
 				  order by Date_opr 
@@ -93,18 +94,18 @@ WITH cte AS (
 			ROW_NUMBER() OVER (PARTITION BY date_opr,libelle ORDER BY abs(credit+debit-@calcint) asc ,date_opr,libelle ) row_num
 			FROM xrelevehistorique
 			where cast(date_opr as date) between dateadd(day,0,cast(@start   as date)) and dateadd(day,8,cast(@start   as date))
-				  and valider=0
+				  --and valider=0
 				  and banque like '%stb%'
 				  and rtrim(ltrim(libelle)) like '%REMBOURSEMENT%INTERET%'
-				  order by Date_opr 
+				  order by Date_opr,abs(credit+debit-@calcint )asc
 			
 			union all
 			select 2 as typeop,idllig,valider,date_opr,libelle,credit,debit,
 			ROW_NUMBER() OVER (PARTITION BY date_opr,libelle,credit,debit ORDER BY date_opr,libelle,credit,debit) row_num
 			FROM xrelevehistorique
 			where /*abs(datediff(day,cast(date_opr as date),cast(@end   as date)))<=10
-				  and*/ valider=0
-				  and cast(date_opr as date) between dateadd(day,-20,cast(@end   as date)) and dateadd(day,8,cast(@end   as date))
+				  and valider=0
+				  and */cast(date_opr as date) between dateadd(day,-20,cast(@end   as date)) and dateadd(day,8,cast(@end   as date))
 				  and credit+debit<=@Montant
 				  and banque like '%stb%'
 				  and rtrim(ltrim(libelle)) like '%Remboursement%principal%'
@@ -114,7 +115,7 @@ WITH cte AS (
 			ROW_NUMBER() OVER (PARTITION BY date_opr,libelle,credit,debit ORDER BY date_opr,libelle,credit,debit) row_num
 			FROM xrelevehistorique
 			where cast(date_opr as date) between dateadd(day,-15,cast(@end   as date)) and dateadd(day,20,cast(@end   as date))
-				  and valider=0
+				  --and valider=0
 				  and banque like '%stb%'
 				  and rtrim(ltrim(libelle)) like '%COMMISSION REGLEMENT EFFET FINA%'
 				  order by (datediff(day,@end,cast(date_opr as date)))
@@ -147,23 +148,16 @@ FROM @table ST2
 
 select  @ch=x from output1
 --select @ch
-if @ch in ('0,1','2,3','0,1,2,3','0,1,2,2,3','0,1,3','0,3')
+if @ch in ('0,1','2,3','0,1,2,3','0,1,2,2,3')
 begin
-if @ch='0,1,3'
-begin
-delete from @table where id=3
-end
-if @ch='0,3'
-begin
-delete from @table where id=3
-end
 --select * from @table
 --select @start as DateReglement,@end as Echeance,@ActRnum as Regnum,@CalcInt,'-**-*-*-*-*-' ;
 update @table
 set valider=0
 set @parcourir =cursor for select * from @table
 open @parcourir
-
+declare @m as numeric(18,3)
+select @m=0
 FETCH NEXT FROM @parcourir INTO @id,@dateop,@libelle,@credit,@debit,@idllig,@valider
 WHILE @@FETCH_STATUS = 0
 
@@ -172,11 +166,19 @@ begin
 if @id in(0,2)
 begin
 	
-
+	if @id=2 begin select @m=@m+@credit+@debit end
 	update xrelevehistorique
 	set valider=0
 	where idllig =@idllig
 	
+	
+
+
+	----------------------------------------------------------------En têtes------------------------------------------------------
+	--select '----entete----'
+
+	if @id=0 or @m<=@Montant
+	begin
 	-----------------------------------------------------------------CPT---------------------------------------------------------
 	
 	update cpt
@@ -214,10 +216,6 @@ begin
 			inner join Cpt 
 				on Cpt_Doc=bq.GaccJou_Code +cast(YEAR(xr.date_opr) as nvarchar)+right('00'+cast(MONTH(xr.date_opr) as nvarchar),2)
 	where Reglement.Reg_Num  =@ActRnum and rtrim(ltrim(xr.libelle))=@libelle
-
-
-	----------------------------------------------------------------En têtes------------------------------------------------------
-	--select '----entete----'
 	insert into  [dbo].[GaccPE] (
 	GaccPE_Num, GaccPE_Date, GaccJou_Code, GaccPE_User, Devise_Code,  GaccPE_Total, GaccPE_Libelle, GaccEx_Code, Doc_Num, GaccPE_Statut, GaccPE_DateCreate)
 	
@@ -239,6 +237,7 @@ begin
 		inner join Cpt 
 			on Cpt_Doc=bq.GaccJou_Code +cast(YEAR(xr.date_opr) as nvarchar)+right('00'+cast(MONTH(xr.date_opr) as nvarchar),2)
 	where Reglement.Reg_Num  =@ActRnum and rtrim(ltrim(xr.libelle))=@libelle
+    end
 end
 if @id=0 begin select @ned=@ne end
 if @id=2 begin select @nep=@ne end
@@ -301,6 +300,8 @@ if @id =2
 begin
 --select '----details paiement----'
 ---------------------------------------------------------------------Paiement debit-------------------------------------------------------------------------------------------
+		 if @m<=@Montant
+		 begin
 		 insert into GaccPD( GaccPE_Num, GaccCpt_Num, GaccPD_Libelle,GaccPD_Coll,  GaccPD_Debit, GaccPD_Credit,GaccPD_DebitDevise, GaccPD_CreditDevise, 
 		 gaccpd_tiers,GaccPD_Ref,  Devise_Code, Devise_Cours, GaccPD_Date, GaccPD_Jou, GaccPD_Echeance, GaccEx_Code,  GaccPD_Doc_Num,GaccPD_ref2,gaccb_rb)
 		
@@ -351,7 +352,7 @@ begin
 		update xrelevehistorique
 	set valider=1
 	where idllig =@idllig
-
+	end
 end
 
 FETCH NEXT FROM @parcourir INTO @id,@dateop,@libelle,@credit,@debit,@idllig,@valider
