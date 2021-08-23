@@ -440,8 +440,8 @@ WHILE @@FETCH_STATUS = 0
 				select @libelle,@ne
 				----------------------------------------------------------------En t�tes------------------------------------------------------
 				--select '----entete----'
-				--insert into  [dbo].[GaccPE] (
-				--GaccPE_Num, GaccPE_Date, GaccJou_Code, GaccPE_User, Devise_Code,  GaccPE_Total, GaccPE_Libelle, GaccEx_Code, Doc_Num, GaccPE_Statut, GaccPE_DateCreate)
+				insert into  [dbo].[GaccPE] (
+				GaccPE_Num, GaccPE_Date, GaccJou_Code, GaccPE_User, Devise_Code,  GaccPE_Total, GaccPE_Libelle, GaccEx_Code, Doc_Num, GaccPE_Statut, GaccPE_DateCreate)
 	
 				SELECT @ne as gaccpe_num,
 				date_opr,gaccjou_code,'RapAuto' as utilisateur,Banque_Devise,	debit+Credit as gaccpe_total,
@@ -474,8 +474,8 @@ WHILE @@FETCH_STATUS = 0
 			begin
 			select '----details deblocage----'
 			---------------------------------------------------------------------D�blocage credit-------------------------------------------------------------------------------------------
-					--insert into GaccPD( GaccPE_Num, GaccCpt_Num, GaccPD_Libelle,GaccPD_Coll,  GaccPD_Debit, GaccPD_Credit, GaccPD_DebitDevise,GaccPD_CreditDevise,
-					--gaccpd_tiers,GaccPD_Ref,  Devise_Code, Devise_Cours, GaccPD_Date, GaccPD_Jou, GaccPD_Echeance, GaccEx_Code,  GaccPD_Doc_Num,GaccPD_ref2,gaccb_rb)
+					insert into GaccPD( GaccPE_Num, GaccCpt_Num, GaccPD_Libelle,GaccPD_Coll,  GaccPD_Debit, GaccPD_Credit, GaccPD_DebitDevise,GaccPD_CreditDevise,
+					gaccpd_tiers,GaccPD_Ref,  Devise_Code, Devise_Cours, GaccPD_Date, GaccPD_Jou, GaccPD_Echeance, GaccEx_Code,  GaccPD_Doc_Num,GaccPD_ref2,gaccb_rb)
 		
 	
 					SELECT distinct @ned,
@@ -498,8 +498,8 @@ WHILE @@FETCH_STATUS = 0
 					null,
 					'RELEVE '+CAST(RIGHT('00' + CAST(MONTH(@dateop) AS nvarchar(2)), 2) AS varchar(10))+'/'+ CAST(YEAR(@dateop) as nvarchar(4))
 					---------------------------------------------------------------------D�blocage debit-------------------------------------------------------------------------------------------
-					--insert into GaccPD( GaccPE_Num, GaccCpt_Num, GaccPD_Libelle,GaccPD_Coll,  GaccPD_Debit, GaccPD_Credit,GaccPD_DebitDevise, GaccPD_CreditDevise,
-					--gaccpd_tiers,GaccPD_Ref,  Devise_Code, Devise_Cours, GaccPD_Date, GaccPD_Jou, GaccPD_Echeance, GaccEx_Code,  GaccPD_Doc_Num,GaccPD_ref2,gaccb_rb)
+					insert into GaccPD( GaccPE_Num, GaccCpt_Num, GaccPD_Libelle,GaccPD_Coll,  GaccPD_Debit, GaccPD_Credit,GaccPD_DebitDevise, GaccPD_CreditDevise,
+					gaccpd_tiers,GaccPD_Ref,  Devise_Code, Devise_Cours, GaccPD_Date, GaccPD_Jou, GaccPD_Echeance, GaccEx_Code,  GaccPD_Doc_Num,GaccPD_ref2,gaccb_rb)
 					SELECT distinct @ned,
 					'50100001' AS GaccCpt_Num ,
 					'Financement Stock'+ ' / -Montant reg- ' +convert(nvarchar(20),(@Montant)) +' / du: '+convert(nvarchar(20),(@start),103)  as GaccPD_Libelle,
@@ -530,8 +530,8 @@ WHILE @@FETCH_STATUS = 0
 			begin
 			select '----details paiement----'
 			---------------------------------------------------------------------Paiement debit-------------------------------------------------------------------------------------------
-					 --insert into GaccPD( GaccPE_Num, GaccCpt_Num, GaccPD_Libelle,GaccPD_Coll,  GaccPD_Debit, GaccPD_Credit,GaccPD_DebitDevise, GaccPD_CreditDevise, 
-					 --gaccpd_tiers,GaccPD_Ref,  Devise_Code, Devise_Cours, GaccPD_Date, GaccPD_Jou, GaccPD_Echeance, GaccEx_Code,  GaccPD_Doc_Num,GaccPD_ref2,gaccb_rb)
+					 insert into GaccPD( GaccPE_Num, GaccCpt_Num, GaccPD_Libelle,GaccPD_Coll,  GaccPD_Debit, GaccPD_Credit,GaccPD_DebitDevise, GaccPD_CreditDevise, 
+					 gaccpd_tiers,GaccPD_Ref,  Devise_Code, Devise_Cours, GaccPD_Date, GaccPD_Jou, GaccPD_Echeance, GaccEx_Code,  GaccPD_Doc_Num,GaccPD_ref2,gaccb_rb)
 		
 					SELECT distinct (select gce from @ent_pay where id=(select max(id) from @ent_pay)),
 					'50100001' AS GaccCpt_Num ,
@@ -557,8 +557,8 @@ WHILE @@FETCH_STATUS = 0
 
 					
 					---------------------------------------------------------------------Paiement credit-------------------------------------------------------------------------------------------
-					--insert into GaccPD( GaccPE_Num, GaccCpt_Num, GaccPD_Libelle,GaccPD_Coll,  GaccPD_Debit, GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,  
-					--gaccpd_tiers,GaccPD_Ref,  Devise_Code, Devise_Cours, GaccPD_Date, GaccPD_Jou, GaccPD_Echeance, GaccEx_Code,  GaccPD_Doc_Num,GaccPD_ref2,gaccb_rb)
+					insert into GaccPD( GaccPE_Num, GaccCpt_Num, GaccPD_Libelle,GaccPD_Coll,  GaccPD_Debit, GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,  
+					gaccpd_tiers,GaccPD_Ref,  Devise_Code, Devise_Cours, GaccPD_Date, GaccPD_Jou, GaccPD_Echeance, GaccEx_Code,  GaccPD_Doc_Num,GaccPD_ref2,gaccb_rb)
 					SELECT distinct (select gce from @ent_pay where id=(select max(id) from @ent_pay)),
 					@bq_compte AS GaccCpt_Num ,
 					'Financement Stock'+ ' / -Montant reg- ' +convert(nvarchar(20),(@Montant)) +' / du: '+convert(nvarchar(20),(@start),103)  as GaccPD_Libelle,
@@ -610,7 +610,7 @@ WHILE @@FETCH_STATUS = 0
 
 				if @libelle like '%Inter%ts%' --and @banqued_montantd>0
 				begin
-					--insert into GaccPD (GaccPE_Num,GaccCpt_Num ,GaccPD_Libelle,GaccPD_Debit,GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,GaccPD_Ref,GaccB_RB,gaccpd_jou,GaccPD_Echeance)
+					insert into GaccPD (GaccPE_Num,GaccCpt_Num ,GaccPD_Libelle,GaccPD_Debit,GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,GaccPD_Ref,GaccB_RB,gaccpd_jou,GaccPD_Echeance)
 					select @ned
 					, @banqued_compte  ,@BanqueD_CompteLib,@banqued_montantd as debit,0 as credit,@banqued_montantd as debitdevise,0 as creditdevise,@ActRnum,null,null ,@dateop	
 					union all
@@ -621,7 +621,7 @@ WHILE @@FETCH_STATUS = 0
 		 
 					 if abs(@banqued_montantd-@BanqueD_MontantBanque)>0
 					 begin
-						 --insert into GaccPD (GaccPE_Num,GaccCpt_Num ,GaccPD_Libelle,GaccPD_Debit,GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,GaccPD_Ref,GaccB_RB,gaccpd_jou,GaccPD_Echeance)
+						 insert into GaccPD (GaccPE_Num,GaccCpt_Num ,GaccPD_Libelle,GaccPD_Debit,GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,GaccPD_Ref,GaccB_RB,gaccpd_jou,GaccPD_Echeance)
 						select @ned ,
 						case  
 							when @libelle  like '%inter%' then '65160109'
@@ -646,7 +646,7 @@ WHILE @@FETCH_STATUS = 0
 				if @libelle like '%Comm Imp effet Prin%' --and @banqued_montantd>0
 				begin
 					--select @BanqueD_MontantBanque=@BanqueD_MontantBanque/1.19
-					--insert into GaccPD (GaccPE_Num,GaccCpt_Num ,GaccPD_Libelle,GaccPD_Debit,GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,GaccPD_Ref,GaccB_RB,gaccpd_jou,GaccPD_Echeance)
+					insert into GaccPD (GaccPE_Num,GaccCpt_Num ,GaccPD_Libelle,GaccPD_Debit,GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,GaccPD_Ref,GaccB_RB,gaccpd_jou,GaccPD_Echeance)
 					select (select gce from @ent_pay where id=(select min(id) from @ent_pay)) ,@banqued_compte  ,@BanqueD_CompteLib,@banqued_montantd as debit,0 as credit,@banqued_montantd as debitdevise,
 					0 as creditdevise,@ActRnum,null,null ,@dateop	
 					union all
@@ -657,7 +657,7 @@ WHILE @@FETCH_STATUS = 0
 		 
 					 if abs(@banqued_montantd-@BanqueD_MontantBanque)>0
 					 begin
-						 --insert into GaccPD (GaccPE_Num,GaccCpt_Num ,GaccPD_Libelle,GaccPD_Debit,GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,GaccPD_Ref,GaccB_RB,gaccpd_jou,GaccPD_Echeance)
+						 insert into GaccPD (GaccPE_Num,GaccCpt_Num ,GaccPD_Libelle,GaccPD_Debit,GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,GaccPD_Ref,GaccB_RB,gaccpd_jou,GaccPD_Echeance)
 						select (select gce from @ent_pay where id=(select min(id) from @ent_pay)) ,
 						case  
 							when @libelle  like '%inter%' then '65160109'
@@ -678,7 +678,7 @@ WHILE @@FETCH_STATUS = 0
 				end
 				if @libelle like '%tva%' --and @banqued_montantd>0
 				begin		
-					--insert into GaccPD (GaccPE_Num,GaccCpt_Num ,GaccPD_Libelle,GaccPD_Debit,GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,GaccPD_Ref,GaccB_RB,gaccpd_jou,GaccPD_Echeance)
+					insert into GaccPD (GaccPE_Num,GaccCpt_Num ,GaccPD_Libelle,GaccPD_Debit,GaccPD_Credit,GaccPD_DebitDevise,GaccPD_CreditDevise,GaccPD_Ref,GaccB_RB,gaccpd_jou,GaccPD_Echeance)
 					select (select gce from @ent_pay where id=(select min(id) from @ent_pay)) ,'43660018' ,'TVA Sur Com',@banqued_montantd*0.19 as debit,0 as credit,@banqued_montantd*0.19 as debitdevise,
 					0 as creditdevise,@ActRnum,null,null ,@dateop	
 					union all
@@ -720,10 +720,10 @@ end
 
 
 
---update reglement
+update reglement
 
---set reg_regcpt=2
---where reg_num=@ActRnum
+set reg_regcpt=2
+where reg_num=@ActRnum
 
 
 

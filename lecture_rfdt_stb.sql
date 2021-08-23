@@ -42,14 +42,14 @@ set @Lot = cursor for
 select DateReglement,Echeance,Regnum,Montant,TMM,Tiers_Code,reg_banque,reg_label from
 (		
 
-	select  top 1 Reg_DateReglement as DateReglement,Reg_DateEcheance as Echeance,reg_num as Regnum,Reg_Montant as Montant,xf.TMM as TMM,Tiers_Code,reg_banque,reg_label
+	select  top 100 Reg_DateReglement as DateReglement,Reg_DateEcheance as Echeance,reg_num as Regnum,Reg_Montant as Montant,xf.TMM as TMM,Tiers_Code,reg_banque,reg_label
 	from reglement
 	inner join xfrais xf
 		on month(dateadd(month,-1,reg_datereglement))=xf.mois
 		and year(dateadd(month,-1,reg_datereglement))=xf.année
 	inner join GaccExercice 
 	on year(reg_datereglement) =GaccExercice.GaccEx_Code 	
-	where RegParam_Code in ('rfdt') and Reg_RegCpt=0 /*and reg_num in( 'RF20Tr777')*/ and year(reg_dateecheance)>=2020 and reg_banque like '%stb%'  --and (reg_ref is not null or reg_ref1 is not null)
+	where RegParam_Code in ('rfdt') and Reg_RegCpt>=0 /*and reg_num in( 'RF20Tr777')*/ and year(reg_dateecheance)>=2020 and reg_banque like '%stb%'  --and (reg_ref is not null or reg_ref1 is not null)
 	--and Reg_Num not in ('RFE210005','RFE210006')
 	--and reg_num='RF20Tr776'
 	order by Reg_DateReglement,Reg_Num  asc
@@ -93,7 +93,7 @@ WITH cte AS (
 				  order by Date_opr 
 			
 			union all
-			--select * from mas..xReleveHistorique where Date_opr>=CAST('2021-08-12' as date) and banque like '%stb%' and Credit+Debit=100000.000 /*cast(debit/1000 as int)=1 and Libelle like '%inter%'*/
+			select * from mas..xReleveHistorique where Date_opr>=CAST('2020-11-20' as date) and banque like '%stb%' and Credit+Debit=143766.000 /*cast(debit/1000 as int)=1 and Libelle like '%inter%'*/
 			select top 1 1 as typeop,idllig,valider, date_opr,libelle,credit,debit,
 			ROW_NUMBER() OVER (PARTITION BY date_opr,libelle ORDER BY abs(credit+debit-@calcint) asc ,date_opr,libelle ) row_num
 			FROM xrelevehistorique

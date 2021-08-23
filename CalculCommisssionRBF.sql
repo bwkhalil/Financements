@@ -1,13 +1,13 @@
 USE mas
 GO
-/****** Object:  StoredProcedure [dbo].[Calcul_Commissionrbf]    Script Date: 28/06/2021 14:26:55 ******/
+/****** Object:  StoredProcedure [dbo].[Calcul_Commissionrfdt]    Script Date: 28/06/2021 14:26:55 ******/
 SET ANSI_NULLS ON
 GO
 SET QUOTED_IDENTIFIER ON
 GO
 
 
---ALTER PROCEDURE [dbo].[Calcul_Commissionrbf]  
+--ALTER PROCEDURE [dbo].[Calcul_Commissionrfdt]  
 --AS 
  
 --begin
@@ -63,7 +63,7 @@ GO
 		and year(dateadd(month,-1,reg_datereglement))=xf.année
 	inner join GaccExercice 
 		on year(reg_datereglement) =GaccExercice.GaccEx_Code 	
-		where  RegParam_Code='rbf' and  Reg_RegCpt=0 and  year(reg_dateecheance)>=2020 and reg_banque like '%stb%' -- and (reg_ref is not null or reg_ref1 is not null)  
+		where  RegParam_Code='rfdt' and  Reg_RegCpt>=0 and  year(reg_dateecheance)>=2020 and reg_banque like '%stb%' -- and (reg_ref is not null or reg_ref1 is not null)  
 		order by reg_datereglement                         
 	open @CR
 	FETCH NEXT FROM @CR
@@ -85,7 +85,7 @@ GO
 		begin
 		delete from BanqueD where BanqueD_OrigineNum =@BanqueD_OrigineNum and BanqueD_Type <> 0
 	-------Paiement Interet--------------------------------
-			if  @RegParam_Code in ('rbf') 
+			if  @RegParam_Code in ('rfdt') 
 			begin
 			insert into BanqueD ( Banque_Code,BanqueD_Date,BanqueD_Libelle,BanqueD_MontantE,BanqueD_MontantD,
 								  BanqueD_Statut,BanqueD_Type,BanqueD_Origine,BanqueD_Origine2,BanqueD_OrigineNum,Date_Create, Integ,Banque_Nature,Banque_Formule,
@@ -97,7 +97,7 @@ GO
 			from Reglement where reg_num =@BanqueD_OrigineNum
 			end
 	-------Commission echeance credit----------------------
-			if  @RegParam_Code in ('rbf')  
+			if  @RegParam_Code in ('rfdt')  
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date, BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2,
 								  BanqueD_OrigineNum,Date_Create,Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
@@ -107,7 +107,7 @@ GO
 			from Reglement where reg_num =@BanqueD_OrigineNum
 			end			
 	------- TVA Comm Imp effet Prin------------------------
-			 if  @RegParam_Code in ('rbf') 
+			 if  @RegParam_Code in ('rfdt') 
 			 begin
 			 insert into BanqueD
 			 (Banque_Code, BanqueD_Date, BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2,
@@ -124,7 +124,7 @@ GO
 			delete from BanqueD where BanqueD_OrigineNum =@BanqueD_OrigineNum and BanqueD_Type <> 0
 	-------REMBOURSEMENT INTERET A L'ECHEANC-----
 	----------------------------
-			if  @RegParam_Code in ('rbf') 
+			if  @RegParam_Code in ('rfdt') 
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date,BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD,
 			BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2, BanqueD_OrigineNum, Date_Create, Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
@@ -136,14 +136,14 @@ GO
 			end
 
 	-------COMMISSION REGLEMENT EFFET FINA-----
-			if  @RegParam_Code in ('rbf')  
+			if  @RegParam_Code in ('rfdt')  
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date    , BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2, BanqueD_OrigineNum, Date_Create, Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
 			select @Banque_Code,@BanqueD_Date,@BanqueD_Libelle,0, @commission_stb_ttc,@BanqueD_Statut,15,5,'',@BanqueD_OrigineNum,@Date_Create,0,'TTC', cast(@commission_stb_ttc as varchar(30))+' DT TTC','','0','COMMISSION REGLEMENT EFFET FINA TTC'
 					--from Reglement where reg_num =@BanqueD_OrigineNum
 			end
 
-			if  @RegParam_Code in ('rbf')  
+			if  @RegParam_Code in ('rfdt')  
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date    , BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2, BanqueD_OrigineNum, Date_Create, Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
 			select @Banque_Code,@BanqueD_Date,@BanqueD_Libelle,0, @commission_stb_ttc/1.19,@BanqueD_Statut,15,5,'',@BanqueD_OrigineNum,@Date_Create,0,'HT','COMMISSION REGLEMENT EFFET HT','62700100','1','COMMISSION REGLEMENT EFFET FINA'
@@ -151,7 +151,7 @@ GO
 			where reg_num =@BanqueD_OrigineNum
 			end
 
-			--if  @RegParam_Code in ('rbf')  
+			--if  @RegParam_Code in ('rfdt')  
 			--begin
 			--insert into BanqueD ( Banque_Code, BanqueD_Date    , BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2, BanqueD_OrigineNum, Date_Create, Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
 			--select @Banque_Code,@BanqueD_Date,@BanqueD_Libelle,0,2.975/1.19,@BanqueD_Statut,15,5,'',@BanqueD_OrigineNum,@Date_Create,0,'HT','COMMISSION REGLEMENT EFFET HT','62700100','1','COMMISSION REGLEMENT EFFET FINA'
@@ -164,7 +164,7 @@ GO
 		begin
 			delete from BanqueD where BanqueD_OrigineNum =@BanqueD_OrigineNum and BanqueD_Type <> 0
 	-------Interet /Remboursement Echeance-----
-			if  @RegParam_Code in ('rbf') 
+			if  @RegParam_Code in ('rfdt') 
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date, BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2, BanqueD_OrigineNum, Date_Create, Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
 			select @Banque_Code,@BanqueD_Date,@BanqueD_Libelle,0,ISnull((((datediff(day,@Date_Create,@BanqueD_Date))*@BanqueD_MontantD*(@xReg_Taux+2.25) /36000)),0)
@@ -174,7 +174,7 @@ GO
 			end
 
 	------- FR. MISE EN PLACE CREDIT  -------------------------------------------------------------------------------------------------------------------
-			if  @RegParam_Code in ('rbf') 
+			if  @RegParam_Code in ('rfdt') 
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date    , BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2, BanqueD_OrigineNum, Date_Create, Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
 			select @Banque_Code,@BanqueD_Date,@BanqueD_Libelle,0,2.618,@BanqueD_Statut,16,5,'',@BanqueD_OrigineNum,@Date_Create,0,'TTC','2.618 DT TTC','','0','FR. MISE EN PLACE CREDIT TTC'
@@ -182,7 +182,7 @@ GO
 			where reg_num =@BanqueD_OrigineNum
 			end
 
-			if  @RegParam_Code in ('rbf') 
+			if  @RegParam_Code in ('rfdt') 
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date    , BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2, BanqueD_OrigineNum, Date_Create, Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
 			select @Banque_Code,@BanqueD_Date,@BanqueD_Libelle,0,2.618/1.19,@BanqueD_Statut,16,5,'',@BanqueD_OrigineNum,@Date_Create,0,'HT','FR. MISE EN PLACE CREDIT ','62700100','1','FR. MISE EN PLACE CREDIT HT'
@@ -190,7 +190,7 @@ GO
 			where reg_num =@BanqueD_OrigineNum
 			end
 	-------REMBOURS. ECHEANCE CREDIT-----------------------------------------------------------------------------------------------------------------------
-			if  @RegParam_Code in ('rbf')  
+			if  @RegParam_Code in ('rfdt')  
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date,BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2, BanqueD_OrigineNum, Date_Create, Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
 			select @Banque_Code,@BanqueD_Date,@BanqueD_Libelle,0,2.975,@BanqueD_Statut,15,5  ,'',@BanqueD_OrigineNum,@Date_Create,0,'TTC','ajouter 2,975 DTT au montant principale lors du remboursement ','','0','REMBOURS. ECHEANCE CREDIT  TTC'
@@ -198,7 +198,7 @@ GO
 			where reg_num =@BanqueD_OrigineNum
 			end
 			
-			if  @RegParam_Code in ('rbf') 
+			if  @RegParam_Code in ('rfdt') 
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date,BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2, BanqueD_OrigineNum, Date_Create, Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
 			select @Banque_Code,@BanqueD_Date,@BanqueD_Libelle,0,(2.975/1.19),@BanqueD_Statut,17,5,'',@BanqueD_OrigineNum  ,@Date_Create,0,'HT','ajouter 2,975 DTT au montant principale lors du remboursement ','62700100','1','REMBOURS. ECHEANCE CREDIT'
@@ -206,14 +206,14 @@ GO
 			where reg_num =@BanqueD_OrigineNum
 			end	
 	--------Frais Effet et obligation------------------------------------------------------------------------------------------------------------------------
-			if  @RegParam_Code in ('rbf')  
+			if  @RegParam_Code in ('rfdt')  
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date,BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2, BanqueD_OrigineNum, Date_Create, Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
 			select @Banque_Code,@BanqueD_Date,@BanqueD_Libelle,0,14.875,@BanqueD_Statut,15,5  ,'',@BanqueD_OrigineNum,@Date_Create,0,'TTC','14,875 DT TTC','','0','REGLEM. EFFETS ET OBLIGATIONS'
 			from Reglement 
 			where reg_num =@BanqueD_OrigineNum
 			end	
-			if  @RegParam_Code in ('rbf') 
+			if  @RegParam_Code in ('rfdt') 
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date,BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2, BanqueD_OrigineNum, Date_Create, Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
 			select @Banque_Code,@BanqueD_Date,@BanqueD_Libelle,0,(14.875/1.19),@BanqueD_Statut,18,5,'',@BanqueD_OrigineNum  ,@Date_Create,0,'HT','Frais Effet et obligation','62700100','1','REGLEM. EFFETS ET OBLIGATIONS'
@@ -226,7 +226,7 @@ GO
 		begin
 			delete from BanqueD where BanqueD_OrigineNum =@BanqueD_OrigineNum and BanqueD_Type <> 0
 	-----Paiement Interet--------------------------------
-			if  @RegParam_Code in ('rbf') 
+			if  @RegParam_Code in ('rfdt') 
 			begin
 			insert into BanqueD ( Banque_Code,BanqueD_Date,BanqueD_Libelle,BanqueD_MontantE,BanqueD_MontantD,
 								  BanqueD_Statut,BanqueD_Type,BanqueD_Origine,BanqueD_Origine2,BanqueD_OrigineNum,Date_Create, Integ,Banque_Nature,Banque_Formule,
@@ -239,7 +239,7 @@ GO
 			where reg_num =@BanqueD_OrigineNum
 			end
 	-----Comm Imp effet Prin----------------------
-			if  @RegParam_Code in ('rbf')  
+			if  @RegParam_Code in ('rfdt')  
 			begin
 			insert into BanqueD ( Banque_Code, BanqueD_Date, BanqueD_Libelle, BanqueD_MontantE, BanqueD_MontantD, BanqueD_Statut, BanqueD_Type, BanqueD_Origine, BanqueD_Origine2,
 								  BanqueD_OrigineNum,Date_Create,Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)
@@ -250,7 +250,7 @@ GO
 			where reg_num =@BanqueD_OrigineNum
 			end			
 	----- TVA Comm Imp effet Prin------------------------
-			 if  @RegParam_Code in ('rbf') 
+			 if  @RegParam_Code in ('rfdt') 
 			 begin
 			 insert into BanqueD
 			 (Banque_Code,BanqueD_Date,BanqueD_Libelle,BanqueD_MontantE,BanqueD_MontantD,BanqueD_Statut,BanqueD_Type,BanqueD_Origine, BanqueD_Origine2,BanqueD_OrigineNum,Date_Create,Integ,Banque_Nature,Banque_Formule,BanqueD_Compte,BanqueD_TypeCompt,BanqueD_CompteLib)

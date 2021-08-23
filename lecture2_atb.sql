@@ -1,4 +1,4 @@
-use mas
+use volteqplus
 
 declare @table as table(id int,libelle varchar(200),date_opr date,debit numeric(18,3),credit numeric(18,3),banque varchar(20),idllig int,touche int default 0,ref varchar(50))
 declare @correction as table(id int,libelle varchar(200),date_opr date,debit numeric(18,3),credit numeric(18,3),banque varchar(20),idllig int,touche int default 0,ref varchar(50))
@@ -7,8 +7,8 @@ select *
 from
 (select top 1200 row_number()over(partition by libelle order by date_opr ) as id
 ,libelle,Date_opr,debit,credit,banque,idllig,0 as touche,Num_piece as ref
-from mas..xrelevehistorique
-where ((reference like '%f13%' or num_piece like '%f13%')or(reference like '%f14%' or num_piece like '%f14%'))
+from xrelevehistorique
+where ((reference like '%13002%' or num_piece like '%13002%')or(reference like '%14002%' or num_piece like '%14002%'))
 and banque like '%atb%'
 and libelle not like '%retar%'
 order by id,date_opr
@@ -35,14 +35,15 @@ while (@ptr<=@cnt)
 begin
 	
 	select @mnt=debit from @table where id=@ptr and libelle like '%paiement%princi%'
-	if @mnt<100000
+	if @mnt<20000
 	begin
 	set @ptr1=@ptr+1 	
 	while (@ptr1<=@cnt)
-	begin
-	--		set @ptr1=@ptr+1
+	begin		
+		--set @ptr1=@ptr+1
 		select @mnt1=debit from @table where id=@ptr1 and libelle like '%paiement%princi%'
-		if @mnt+@mnt1<=100000 
+		select @ptr,@ptr1,@mnt1,@mnt+@mnt1
+		if @mnt+@mnt1<=20000 
 		begin
 			select @mnt=@mnt+@mnt1
 			update @table
@@ -50,20 +51,14 @@ begin
 			where id=@ptr1 and libelle like '%paiement%princi%' and touche =0
 		end
 		set @ptr1=@ptr1+1
-
-		--		select @mnt1=debit from @table where id=@ptr1 and libelle like '%paiement%princi%'
-		--		--if @mnt+@mnt1<=100000
-		--		--begin 
-		--		--	select @mnt=@mnt+@mnt1
-		--		--	update @table
-		--		--	set id=@ptr
-		--		--	where id=@ptr1 and libelle like '%paiement%princi%'
-
+		if @mnt=cast(20000 as numeric(18,3)) begin break end
+		
 	end
 			
 	end
 	--end
 	set @ptr=@ptr+1
+	
 	
 end
 declare @reference as varchar(50)
@@ -208,7 +203,7 @@ declare @dte_deb as date
 declare @dte_ev1 as date
 declare @dte_ev2 as int
 set @ptr=1
-
+declare @somme as numeric(18,3)
 while (@ptr<=@cnt)
 begin	
 	select @reference=rtrim(ltrim(ref)) from @table where id=@ptr and libelle like '%deblo%'
@@ -217,25 +212,38 @@ begin
 	--paiement
 	select @cpt_pay= COUNT(*) from @table where libelle like '%paiement%princ%' and id=@ptr 
 	select @f_idllig=idllig from @table where id=@ptr and libelle like '%paiement%princ%'
+	select @somme=SUM(debit) from @table where id=@ptr and libelle like '%paiement%princ%'
 	
-	set @mnt1=0
-	if @cpt_pay =0 
+	if @cpt_pay =0 or @somme<@mnt
 	begin
 		--set @proceder=1
+		set @mnt1=0
 		set @ptr1=@ptr+1
+		if @ptr1>@cnt begin set @ptr1=@ptr-1 end 
+		
 		while (@ptr1<=@cnt)
 		begin
 			select @fausse_ref1=rtrim(ltrim(ref)) from @table where id=@ptr1 and libelle like '%paiement%princ%' and touche <>3
+			select @mnt1=@mnt1+debit from @table where id=@ptr1 and libelle like '%paiement%princ%' and touche <>3
 			declare @myref as varchar(150)
 			select @myref=rtrim(ltrim(ref)) from @table where id=@ptr1 and libelle like '%deblo%' and touche <>3
 			select @idllig=idllig from @table where id=@ptr1 and libelle like '%paiement%princ%' and touche <>3
 			select @cpt_pay1= COUNT(*) from @table where libelle like '%paiement%princ%' and id=@ptr1 and touche <>3			
 			if @cpt_pay1 >0
 			begin
+			
 				select @dte_deb=cast(date_opr as date) from @table where id=@ptr1 and libelle like '%deblo%' and touche <>3
 				select @dte_ev2=datediff(day,@dte_deb,date_opr) from @table where id=@ptr1 and libelle like '%paiement%princ%' and touche <>3
 				select @ptr,@ptr1,@dte_ev2,@fausse_ref1,@reference
 				if @fausse_ref1<>@myref and @reference=@fausse_ref1
+				begin
+
+					update @table
+					set id=@ptr,touche=3
+					where  id=@ptr1 and libelle like '%paiement%princ%' --and @fausse_ref1=@reference
+					break
+				end
+				if @reference=@fausse_ref1 and @mnt1>@mnt
 				begin
 					update @table
 					set id=@ptr,touche=3
@@ -358,29 +366,32 @@ WHILE @@FETCH_STATUS = 0
 		begin
 			select @actref=@actref1
 		end
+		select @actref=replace(@actref,'t','')
+		select @actref1=replace(@actref1,'t','')
+		select @actref,@actref,'*-*-*-*-'
 		select @tk3=count(*)  from @correction cr
-		inner join mas..Reglement reg
-		on (left(reg.reg_ref,7)=cr.ref or left(reg.reg_ref1,7)=cr.ref)
-		and reg.reg_montant=(select credit+debit from mas..xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%')
-		and cast(reg.Reg_DateReglement  as date) =cast((select date_opr from mas..xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%') as date)
+		inner join Reglement reg
+		on (replace(left(reg.reg_ref,7),'t','')=left(cr.ref,6) or replace(left(reg.reg_ref,7),'t','')=left(cr.ref,6))
+		and reg.reg_montant=(select credit+debit from xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%')
+		and cast(reg.Reg_DateReglement  as date) =cast((select date_opr from xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%') as date)
 		where reg.Reg_Num=@ActRnum
 		if @tk3=0
 		begin
 			select @actId=cr.id from @correction cr
-			inner join mas..Reglement reg
-			on (left(reg.reg_ref,7)=cr.ref or left(reg.reg_ref1,7)=cr.ref)
-			and reg.reg_montant=(select credit+debit from mas..xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%')
-			and cast(reg.Date_create as date) between dateadd(day,-30,cast((select date_opr from mas..xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%') as date))
-											  and     dateadd(day,30,cast((select date_opr from mas..xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%') as date))
+			inner join Reglement reg
+			on (replace(left(reg.reg_ref,7),'t','')=left(cr.ref,6) or replace(left(reg.reg_ref1,7),'t','')=left(cr.ref,6))
+			and reg.reg_montant=(select credit+debit from xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%')
+			and cast(reg.Date_create as date) between dateadd(day,-30,cast((select date_opr from xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%') as date))
+											  and     dateadd(day,30,cast((select date_opr from xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%') as date))
 			where reg.Reg_Num=@ActRnum 
 		end
 		else
 		begin
 			select @actId=cr.id from @correction cr
-			inner join mas..Reglement reg
-			on (left(reg.reg_ref,7)=cr.ref or left(reg.reg_ref1,7)=cr.ref)
-			and reg.reg_montant=(select credit+debit from mas..xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%')
-			and cast(reg.Reg_DateReglement  as date) =cast((select date_opr from mas..xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%') as date)
+			inner join Reglement reg
+			on (replace(left(reg.reg_ref,7),'t','')=left(cr.ref,6) or replace(left(reg.reg_ref1,7),'t','')=left(cr.ref,6))
+			and reg.reg_montant=(select credit+debit from xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%')
+			and cast(reg.Reg_DateReglement  as date) =cast((select date_opr from xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%') as date)
 			where reg.Reg_Num=@ActRnum 
 		end
 		select @ActRnum,'---',@actId
@@ -745,12 +756,12 @@ end
 
 --------------------------------------------------------------------------------
 --select cr.id,cr.libelle,cr.ref,cr.date_opr,cr.credit+cr.debit as mt,cr.banque from @correction cr
---inner join mas..Reglement reg
+--inner join Reglement reg
 --on (left(reg.reg_ref,7)=cr.ref or left(reg.reg_ref1,7)=cr.ref)
---and reg.reg_montant=(select credit+debit from mas..xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%')
---and cast(reg.Date_create as date) <=cast((select date_opr from mas..xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%') as date)
+--and reg.reg_montant=(select credit+debit from xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%')
+--and cast(reg.Date_create as date) <=cast((select date_opr from xrelevehistorique where idllig=cr.idllig and cr.libelle like '%deblo%') as date)
 --where reg.Reg_Num in (select Reg_Num
---from MAS..Reglement
+--from Reglement
 
 --where RegParam_Code in ('rbf')  and year(reg_dateecheance)>=2020 and (reg_ref is not null or reg_ref1 is not null)
 -- and reg_banque like '%atb%')
